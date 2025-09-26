@@ -1,4 +1,3 @@
-// internal/kafka/consumer.go
 package kafka
 
 import (
@@ -30,8 +29,8 @@ func NewConsumer(address []string, topic, groupID string, db *gorm.DB, cache *ca
 		Brokers:  address,
 		Topic:    topic,
 		GroupID:  groupID,
-		MinBytes: 10e3, // 10KB
-		MaxBytes: 10e6, // 10MB
+		MinBytes: 10e3,
+		MaxBytes: 10e6,
 		MaxWait:  5 * time.Second,
 	}
 
@@ -58,14 +57,13 @@ func (c *Consumer) Start() {
 		case <-c.stopChan:
 			return
 		default:
-			// Используем контекст с таймаутом для чтения
 			ctx, cancel := context.WithTimeout(c.ctx, 20*time.Second)
 			msg, err := c.reader.ReadMessage(ctx)
 			cancel()
 
 			if err != nil {
 				if err == context.DeadlineExceeded {
-					continue // Таймаут - нормально, продолжаем
+					continue
 				}
 				if strings.Contains(err.Error(), "context canceled") {
 					log.Println("Consumer context canceled, stopping")
@@ -75,7 +73,6 @@ func (c *Consumer) Start() {
 				continue
 			}
 
-			// Проверка пустого сообщения
 			if len(msg.Value) == 0 {
 				log.Println("We got empty message, continue")
 				continue
@@ -92,7 +89,6 @@ func (c *Consumer) Start() {
 	}
 }
 
-// Структура для парсинга JSON из Kafka
 type KafkaOrder struct {
 	OrderUID          string          `json:"order_uid"`
 	TrackNumber       string          `json:"track_number"`
@@ -111,21 +107,17 @@ type KafkaOrder struct {
 }
 
 func (c *Consumer) processMessage(data []byte) error {
-	// Парсим JSON в временную структуру
 	var kafkaOrder KafkaOrder
 	if err := json.Unmarshal(data, &kafkaOrder); err != nil {
 		return fmt.Errorf("unmarshal error: %w", err)
 	}
 
-	// Валидация обязательных полей
 	if kafkaOrder.OrderUID == "" {
 		return fmt.Errorf("invalid order: order_uid is empty")
 	}
 
-	// Начинаем транзакцию
 	tx := c.db.Begin()
 
-	// 1. Сохраняем основной заказ
 	order := models.Order{
 		OrderUID:          kafkaOrder.OrderUID,
 		TrackNumber:       kafkaOrder.TrackNumber,
@@ -143,22 +135,17 @@ func (c *Consumer) processMessage(data []byte) error {
 		tx.Rollback()
 		return fmt.Errorf("create order failed: %w", err)
 	}
-
-	// 2. Сохраняем Delivery (устанавливаем OrderUID)
 	kafkaOrder.Delivery.OrderUID = kafkaOrder.OrderUID
 	if err := tx.Create(&kafkaOrder.Delivery).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create delivery failed: %w", err)
 	}
 
-	// 3. Сохраняем Payment (устанавливаем OrderUID)
 	kafkaOrder.Payment.OrderUID = kafkaOrder.OrderUID
 	if err := tx.Create(&kafkaOrder.Payment).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create payment failed: %w", err)
 	}
-
-	// 4. Сохраняем Items (устанавливаем OrderUID для каждого)
 	for i := range kafkaOrder.Items {
 		kafkaOrder.Items[i].OrderUID = kafkaOrder.OrderUID
 		if err := tx.Create(&kafkaOrder.Items[i]).Error; err != nil {
@@ -166,13 +153,9 @@ func (c *Consumer) processMessage(data []byte) error {
 			return fmt.Errorf("create item failed: %w", err)
 		}
 	}
-
-	// Коммитим транзакцию
 	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("commit transaction failed: %w", err)
 	}
-
-	// Добавляем в кэш (только основную информацию о заказе)
 	if err := c.cache.Set(order.OrderUID, &order); err != nil {
 		log.Printf("Warning: failed to add order to cache: %v", err)
 	}

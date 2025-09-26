@@ -74,36 +74,33 @@ func main() {
 	}
 	defer producer.Close()
 
-	log.Println("🚀 Producer started. Sending test orders to Kafka...")
+	log.Println("Producer started. Sending test orders to Kafka...")
 	log.Println("Press Ctrl+C to stop")
-
-	// Бесконечный цикл отправки заказов
 	counter := 1
 	for {
 		order := generateTestOrder(counter)
 
 		message, err := json.Marshal(order)
 		if err != nil {
-			log.Printf("❌ Error marshaling order: %v", err)
+			log.Printf("Error marshaling order: %v", err)
 			continue
 		}
 
 		err = producer.Produce(string(message), "order", order.OrderUID)
 		if err != nil {
-			log.Printf("❌ Error producing message: %v", err)
+			log.Printf("Error producing message: %v", err)
 		} else {
-			log.Printf("✅ Order %d sent: %s", counter, order.OrderUID)
+			log.Printf("Order %d sent: %s", counter, order.OrderUID)
 		}
 
 		counter++
-		time.Sleep(5 * time.Second) // Отправка каждые 5 секунд
+		time.Sleep(5 * time.Second)
 	}
 }
 
 func generateTestOrder(id int) OrderData {
 	now := time.Now().Format(time.RFC3339)
 
-	// Генерация случайных данных для разнообразия
 	names := []string{"Test Testov", "Иван Иванов", "John Doe", "Maria Garcia"}
 	cities := []string{"Kiryat Mozkin", "Moscow", "New York", "London"}
 	products := []string{"Mascaras", "Laptop", "Smartphone", "Book", "Shoes"}

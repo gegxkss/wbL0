@@ -25,7 +25,7 @@ const (
 	groupID = "orders-group"
 )
 
-var kafkaAddresses = []string{"localhost:9091", "localhost:9092", "localhost:9093"}
+var kafkaAddresses = []string{"localhost:9091", "localhost:9092"}
 
 func main() {
 	flag.Parse()
@@ -71,11 +71,9 @@ func main() {
 	waitForShutdown()
 }
 func simulateOrders(cache *cache.Cache, db *gorm.DB) {
-	time.Sleep(5 * time.Second) // Дать время на запуск сервера
+	time.Sleep(5 * time.Second)
 
-	log.Println("🔄 Creating demo orders for testing...")
-
-	// Создаем тестовый заказ 1
+	log.Println("Creating demo orders for testing...")
 	testOrder1 := models.Order{
 		OrderUID:          "b563feb7b2b84b6test",
 		TrackNumber:       "WBILMTESTTRACK",
@@ -90,14 +88,12 @@ func simulateOrders(cache *cache.Cache, db *gorm.DB) {
 		OofShard:          "1",
 	}
 
-	// Сохраняем в кэш
 	if err := cache.Set(testOrder1.OrderUID, &testOrder1); err != nil {
-		log.Printf("❌ Failed to add demo order to cache: %v", err)
+		log.Printf("Failed to add demo order to cache: %v", err)
 	} else {
-		log.Printf("✅ Demo order 1 created: %s", testOrder1.OrderUID)
+		log.Printf("Demo order 1 created: %s", testOrder1.OrderUID)
 	}
 
-	// Создаем тестовый заказ 2
 	testOrder2 := models.Order{
 		OrderUID:          "test-order-456",
 		TrackNumber:       "TESTTRACK456",
@@ -113,12 +109,12 @@ func simulateOrders(cache *cache.Cache, db *gorm.DB) {
 	}
 
 	if err := cache.Set(testOrder2.OrderUID, &testOrder2); err != nil {
-		log.Printf("❌ Failed to add demo order to cache: %v", err)
+		log.Printf("Failed to add demo order to cache: %v", err)
 	} else {
-		log.Printf("✅ Demo order 2 created: %s", testOrder2.OrderUID)
+		log.Printf("Demo order 2 created: %s", testOrder2.OrderUID)
 	}
 
-	log.Println("🎯 Demo orders ready! Use these IDs in the web interface:")
+	log.Println("Demo orders ready:")
 	log.Println("   - b563feb7b2b84b6test")
 	log.Println("   - test-order-456")
 }
