@@ -1,6 +1,8 @@
 package models
 
 type Payment struct {
+	ID           uint   `gorm:"primaryKey;autoIncrement" json:"-"`
+	OrderUID     string `gorm:"not null" json:"-"`
 	Transaction  string `json:"transaction"`
 	RequestID    string `json:"request_id"`
 	Currency     string `json:"currency"`

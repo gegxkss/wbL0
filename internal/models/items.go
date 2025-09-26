@@ -2,9 +2,9 @@ package models
 
 type Items struct {
 	ID          uint   `gorm:"primaryKey;autoIncrement" json:"-"`
-	OrderID     string `gorm:"not null" json:"-"`
+	OrderUID    string `gorm:"not null" json:"-"`
 	ChrtId      int    `json:"chrt_id"`
-	Tracknumber string `json:"track_number"`
+	Tracknumber string `gorm:"column:track_number" json:"track_number"`
 	Price       int    `json:"price"`
 	Rid         string `json:"rid"`
 	Name        string `json:"name"`

@@ -1,13 +1,13 @@
 package models
 
 type Delivery struct {
-	ID      uint   `gorm:"primaryKey;autoIncrement" json:"-"`
-	OrderID string `gorm:"not null" json:"-"`
-	Name    string `json:"name"`
-	Phone   string `json:"phone"`
-	Zip     string `json:"zip"`
-	City    string `json:"city"`
-	Address string `json:"address"`
-	Region  string `json:"region"`
-	Email   string `json:"email"`
+	ID       uint   `gorm:"primaryKey;autoIncrement" json:"-"`
+	OrderUID string `gorm:"not null" json:"-"`
+	Name     string `json:"name"`
+	Phone    string `json:"phone"`
+	Zip      string `json:"zip"`
+	City     string `json:"city"`
+	Address  string `json:"address"`
+	Region   string `json:"region"`
+	Email    string `json:"email"`
 }

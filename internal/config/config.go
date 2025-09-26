@@ -26,3 +26,7 @@ func ConnectDB() {
 
 	log.Println("Successfully connected to database")
 }
+
+func RestoreFromDB() {
+
+}
