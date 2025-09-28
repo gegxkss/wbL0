@@ -132,15 +132,6 @@ func (c *Consumer) processMessage(data []byte) error {
 		return fmt.Errorf("create delivery failed: %w", err)
 	}
 
-	// Сохраняем оплату
-	payment := order.Payment
-	payment.ID = 0
-	payment.OrderUID = order.OrderUID
-	if err := tx.Create(&payment).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("create payment failed: %w", err)
-	}
-
 	// Сохраняем товары
 	for i := range order.Items {
 		item := order.Items[i]
@@ -150,6 +141,15 @@ func (c *Consumer) processMessage(data []byte) error {
 			tx.Rollback()
 			return fmt.Errorf("create item failed: %w", err)
 		}
+	}
+
+	// Сохраняем оплату
+	payment := order.Payment
+	payment.ID = 0
+	payment.OrderUID = order.OrderUID
+	if err := tx.Create(&payment).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("create payment failed: %w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {

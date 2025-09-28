@@ -14,7 +14,7 @@ type Cache struct {
 }
 
 const (
-	cacheMaxSize = 500
+	cacheMaxSize = 1000
 )
 
 func NewCache() *Cache {
@@ -43,6 +43,14 @@ func (c *Cache) Set(orderUID string, value interface{}) error {
 	return nil
 }
 
+func (c *Cache) Get(orderUID string) (interface{}, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	item, exists := c.items[orderUID]
+	return item, exists
+}
+
 func (c *Cache) deleteLast() {
 	for orderUID := range c.items {
 		delete(c.items, orderUID)
@@ -50,12 +58,4 @@ func (c *Cache) deleteLast() {
 		log.Printf("Removed order from cache: %s", orderUID)
 		break
 	}
-}
-
-func (c *Cache) Get(orderUID string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	item, exists := c.items[orderUID]
-	return item, exists
 }
