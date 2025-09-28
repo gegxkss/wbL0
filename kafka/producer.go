@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -12,8 +11,6 @@ import (
 const (
 	flushTimeout = 30 * time.Second
 )
-
-var errUnknownType = errors.New("unknown event type")
 
 type Producer struct {
 	writer *kafka.Writer
