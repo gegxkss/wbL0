@@ -1,7 +1,7 @@
 package models
 
 type Delivery struct {
-	ID       uint   `gorm:"primaryKey;autoIncrement" json:"-"`
+	ID       uint   `gorm:"primaryKey;autoIncrement:true" json:"-"`
 	OrderUID string `gorm:"not null" json:"-"`
 	Name     string `json:"name"`
 	Phone    string `json:"phone"`

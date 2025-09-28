@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"log"
 	"sync"
-
-	"github.com/gegxkss/wbL0/internal/models"
 )
 
 type Cache struct {
-	orders  map[string]*models.Order
+	items   map[string]interface{} // ИЗМЕНИЛ: interface{} вместо *models.Order
 	size    int
 	maxSize int
 	mu      sync.RWMutex
@@ -21,15 +19,15 @@ const (
 
 func NewCache() *Cache {
 	return &Cache{
-		orders:  make(map[string]*models.Order),
+		items:   make(map[string]interface{}),
 		size:    0,
 		maxSize: cacheMaxSize,
 	}
 }
 
-func (c *Cache) Set(orderUID string, order *models.Order) error {
-	if order == nil {
-		return fmt.Errorf("can not be nil")
+func (c *Cache) Set(orderUID string, value interface{}) error { // ИЗМЕНИЛ: interface{} вместо *models.Order
+	if value == nil {
+		return fmt.Errorf("value can not be nil")
 	}
 
 	c.mu.Lock()
@@ -39,29 +37,25 @@ func (c *Cache) Set(orderUID string, order *models.Order) error {
 		c.deleteLast()
 	}
 
-	c.orders[orderUID] = order
+	c.items[orderUID] = value
 	c.size++
 
 	return nil
 }
 
 func (c *Cache) deleteLast() {
-	for orderUID := range c.orders {
-		delete(c.orders, orderUID)
+	for orderUID := range c.items {
+		delete(c.items, orderUID)
 		c.size--
 		log.Printf("Removed order from cache: %s", orderUID)
 		break
 	}
 }
 
-func (c *Cache) Get(orderUID string) (*models.Order, error) {
+func (c *Cache) Get(orderUID string) (interface{}, bool) { // ИЗМЕНИЛ: возвращает interface{} и bool
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	order, exists := c.orders[orderUID]
 
-	if !exists {
-		return nil, fmt.Errorf("order not found: %s", orderUID)
-	}
-
-	return order, nil
+	item, exists := c.items[orderUID]
+	return item, exists
 }

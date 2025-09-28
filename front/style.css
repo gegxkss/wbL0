@@ -62,7 +62,7 @@ body {
 .search-input:focus {
     outline: none;
     border-color: #8537bd;
-    box-shadow: 0 0 0 3px rgba(45, 16, 42, 0.1);
+    box-shadow: 0 10 0 3px rgba(40, 163, 38, 0.1);
 }
 
 .search-button {
@@ -79,7 +79,7 @@ body {
 
 .search-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(190, 66, 167, 0.3);
+    box-shadow: 0 10px 20px rgba(49, 15, 43, 0.3);
 }
 
 .search-button:active {

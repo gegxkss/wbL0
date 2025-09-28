@@ -11,8 +11,10 @@ import (
 	"github.com/gegxkss/wbL0/internal/cache"
 	"github.com/gegxkss/wbL0/internal/config"
 	"github.com/gegxkss/wbL0/internal/handlers"
+	"github.com/gegxkss/wbL0/internal/models"
 	"github.com/gegxkss/wbL0/kafka"
 	"github.com/gegxkss/wbL0/migrations"
+	"gorm.io/gorm"
 )
 
 var migrate = flag.Bool("m", false, "Run database migrations")
@@ -32,38 +34,37 @@ func main() {
 		log.Println("Migrations completed. Exiting.")
 		return
 	}
+
 	config.ConnectDB()
-	log.Println("Database connection successful!")
-	log.Println("Add your Kafka logic here later.")
-
 	cache := cache.NewCache()
-	log.Printf("Cache initialized (empty)")
+	restoreCacheFromDB(config.DB, cache)
 
-	consumer, err := kafka.NewConsumer(kafkaAddresses, topic, groupID, config.DB, cache)
-	if err != nil {
-		log.Fatalf("Failed to create Kafka consumer: %v", err)
-	}
-
-	go func() {
-		log.Println("Starting Kafka consumer...")
-		consumer.Start()
-	}()
+	consumer, _ := kafka.NewConsumer(kafkaAddresses, topic, groupID, config.DB, cache)
+	go consumer.Start()
 	defer consumer.Stop()
 
 	handlers.SetupRoutes(cache, config.DB)
 
 	go func() {
 		log.Println("Starting HTTP server on :8081")
-		if err := http.ListenAndServe(":8081", nil); err != nil {
-			log.Printf("HTTP server error: %v", err)
-		}
+		http.ListenAndServe(":8081", nil)
 	}()
 
 	log.Println("Application started successfully!")
-	log.Println("Kafka consumer is listening for orders...")
-	log.Println("HTTP API is available on http://localhost:8081")
-
 	waitForShutdown()
+}
+
+func restoreCacheFromDB(db *gorm.DB, cache *cache.Cache) {
+	log.Println("Restoring cache from database...")
+
+	var orders []models.Order
+	db.Preload("Delivery").Preload("Payment").Preload("Items").Limit(1000).Find(&orders)
+
+	for _, order := range orders {
+		cache.Set(order.OrderUID, &order)
+	}
+
+	log.Printf("Cache restored with %d orders", len(orders))
 }
 
 func waitForShutdown() {

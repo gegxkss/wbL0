@@ -89,86 +89,85 @@ func (c *Consumer) Start() {
 	}
 }
 
-type KafkaOrder struct {
-	OrderUID          string          `json:"order_uid"`
-	TrackNumber       string          `json:"track_number"`
-	Entry             string          `json:"entry"`
-	Delivery          models.Delivery `json:"delivery"`
-	Payment           models.Payment  `json:"payment"`
-	Items             []models.Items  `json:"items"`
-	Locale            string          `json:"locale"`
-	InternalSignature string          `json:"internal_signature"`
-	CustomerId        string          `json:"customer_id"`
-	DeliveryService   string          `json:"delivery_service"`
-	ShardKey          string          `json:"shardkey"`
-	SmId              int             `json:"sm_id"`
-	DateCreated       string          `json:"date_created"`
-	OofShard          string          `json:"oof_shard"`
-}
-
 func (c *Consumer) processMessage(data []byte) error {
-	var kafkaOrder KafkaOrder
-	if err := json.Unmarshal(data, &kafkaOrder); err != nil {
+	var order models.Order
+	if err := json.Unmarshal(data, &order); err != nil {
 		return fmt.Errorf("unmarshal error: %w", err)
 	}
 
-	if kafkaOrder.OrderUID == "" {
+	log.Printf("Received order: %s, items count: %d", order.OrderUID, len(order.Items))
+
+	if order.OrderUID == "" {
 		return fmt.Errorf("invalid order: order_uid is empty")
 	}
 
 	tx := c.db.Begin()
 
-	order := models.Order{
-		OrderUID:          kafkaOrder.OrderUID,
-		TrackNumber:       kafkaOrder.TrackNumber,
-		Entry:             kafkaOrder.Entry,
-		Locale:            kafkaOrder.Locale,
-		InternalSignature: kafkaOrder.InternalSignature,
-		CustomerId:        kafkaOrder.CustomerId,
-		DeliveryService:   kafkaOrder.DeliveryService,
-		ShardKey:          kafkaOrder.ShardKey,
-		SmId:              kafkaOrder.SmId,
-		OofShard:          kafkaOrder.OofShard,
+	// Сохраняем заказ (без вложенных структур)
+	orderToSave := models.Order{
+		OrderUID:          order.OrderUID,
+		TrackNumber:       order.TrackNumber,
+		Entry:             order.Entry,
+		Locale:            order.Locale,
+		InternalSignature: order.InternalSignature,
+		CustomerId:        order.CustomerId,
+		DeliveryService:   order.DeliveryService,
+		ShardKey:          order.ShardKey,
+		SmId:              order.SmId,
+		DateCreated:       order.DateCreated,
+		OofShard:          order.OofShard,
 	}
 
-	if err := tx.Create(&order).Error; err != nil {
+	if err := tx.Create(&orderToSave).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create order failed: %w", err)
 	}
-	kafkaOrder.Delivery.OrderUID = kafkaOrder.OrderUID
-	if err := tx.Create(&kafkaOrder.Delivery).Error; err != nil {
+
+	// Сохраняем доставку (обнуляем ID)
+	delivery := order.Delivery
+	delivery.ID = 0 // ОБНУЛЯЕМ ID
+	delivery.OrderUID = order.OrderUID
+	if err := tx.Create(&delivery).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create delivery failed: %w", err)
 	}
 
-	kafkaOrder.Payment.OrderUID = kafkaOrder.OrderUID
-	if err := tx.Create(&kafkaOrder.Payment).Error; err != nil {
+	// Сохраняем оплату (обнуляем ID)
+	payment := order.Payment
+	payment.ID = 0 // ОБНУЛЯЕМ ID
+	payment.OrderUID = order.OrderUID
+	if err := tx.Create(&payment).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create payment failed: %w", err)
 	}
-	for i := range kafkaOrder.Items {
-		kafkaOrder.Items[i].OrderUID = kafkaOrder.OrderUID
-		if err := tx.Create(&kafkaOrder.Items[i]).Error; err != nil {
+
+	// Сохраняем товары (обнуляем ID)
+	for i := range order.Items {
+		item := order.Items[i]
+		item.ID = 0 // ОБНУЛЯЕМ ID
+		item.OrderUID = order.OrderUID
+		if err := tx.Create(&item).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("create item failed: %w", err)
 		}
 	}
+
 	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("commit transaction failed: %w", err)
 	}
+
+	// Сохраняем в кэш оригинальный order (с данными)
+	log.Printf("Saving order to cache: %s", order.OrderUID)
 	if err := c.cache.Set(order.OrderUID, &order); err != nil {
 		log.Printf("Warning: failed to add order to cache: %v", err)
 	}
 
-	log.Printf("Successfully saved order %s with all related data", order.OrderUID)
+	log.Printf("Successfully saved order %s", order.OrderUID)
 	return nil
 }
 
 func (c *Consumer) Stop() {
 	close(c.stopChan)
 	c.cancel()
-
-	if err := c.reader.Close(); err != nil {
-		log.Printf("Error closing consumer: %v", err)
-	}
+	c.reader.Close()
 }
