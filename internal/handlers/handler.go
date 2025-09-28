@@ -11,15 +11,11 @@ import (
 )
 
 func SetupRoutes(cache *cache.Cache, db *gorm.DB) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "WB L0 Service is running",
-		})
-	})
-
+	fs := http.FileServer(http.Dir("./front"))
+	http.Handle("/", fs)
 	http.HandleFunc("/order/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		pathParts := strings.Split(r.URL.Path, "/")
 		if len(pathParts) < 3 || pathParts[2] == "" {

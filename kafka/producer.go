@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	flushTimeout = 5 * time.Second
+	flushTimeout = 30 * time.Second
 )
 
 var errUnknownType = errors.New("unknown event type")

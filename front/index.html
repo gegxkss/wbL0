@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сервис информации о заказах</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Сервис информации о заказах</h1>
+            <p>Получите полную информацию о ваших заказах</p>
+        </div>
+
+        <div class="search-section">
+            <div class="search-form">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="orderIdInput" 
+                    placeholder="Введите ID заказа"
+                    required
+                >
+                <button type="button" class="search-button" onclick="searchOrder()">
+                    Найти заказ
+                </button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Загрузка информации о заказе...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+
+        <div class="result-section" id="resultSection">
+            <div class="order-info">
+                <div class="section">
+                    <h3>Детали заказа</h3>
+                    <div class="info-grid" id="orderDetails"></div>
+                </div>
+
+                <div class="section">
+                    <h3>Информация о доставке</h3>
+                    <div class="info-grid" id="deliveryInfo"></div>
+                </div>
+
+                <div class="section">
+                    <h3>Информация об оплате</h3>
+                    <div class="info-grid" id="paymentInfo"></div>
+                </div>
+
+                <div class="section">
+                    <h3>Товары в заказе</h3>
+                    <table class="items-table" id="itemsTable">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Бренд</th>
+                                <th>Цена</th>
+                                <th>Количество</th>
+                                <th>Общая стоимость</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -31,7 +31,7 @@ func NewConsumer(address []string, topic, groupID string, db *gorm.DB, cache *ca
 		GroupID:  groupID,
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
-		MaxWait:  5 * time.Second,
+		MaxWait:  30 * time.Second,
 	}
 
 	reader := kafka.NewReader(config)
