@@ -7,7 +7,7 @@ import (
 )
 
 type Cache struct {
-	items   map[string]interface{} // ИЗМЕНИЛ: interface{} вместо *models.Order
+	items   map[string]interface{}
 	size    int
 	maxSize int
 	mu      sync.RWMutex
@@ -25,7 +25,7 @@ func NewCache() *Cache {
 	}
 }
 
-func (c *Cache) Set(orderUID string, value interface{}) error { // ИЗМЕНИЛ: interface{} вместо *models.Order
+func (c *Cache) Set(orderUID string, value interface{}) error {
 	if value == nil {
 		return fmt.Errorf("value can not be nil")
 	}
@@ -52,7 +52,7 @@ func (c *Cache) deleteLast() {
 	}
 }
 
-func (c *Cache) Get(orderUID string) (interface{}, bool) { // ИЗМЕНИЛ: возвращает interface{} и bool
+func (c *Cache) Get(orderUID string) (interface{}, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 

@@ -103,7 +103,7 @@ func (c *Consumer) processMessage(data []byte) error {
 
 	tx := c.db.Begin()
 
-	// Сохраняем заказ (без вложенных структур)
+	// Сохраняем заказ
 	orderToSave := models.Order{
 		OrderUID:          order.OrderUID,
 		TrackNumber:       order.TrackNumber,
@@ -123,28 +123,28 @@ func (c *Consumer) processMessage(data []byte) error {
 		return fmt.Errorf("create order failed: %w", err)
 	}
 
-	// Сохраняем доставку (обнуляем ID)
+	// Сохраняем доставку
 	delivery := order.Delivery
-	delivery.ID = 0 // ОБНУЛЯЕМ ID
+	delivery.ID = 0
 	delivery.OrderUID = order.OrderUID
 	if err := tx.Create(&delivery).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create delivery failed: %w", err)
 	}
 
-	// Сохраняем оплату (обнуляем ID)
+	// Сохраняем оплату
 	payment := order.Payment
-	payment.ID = 0 // ОБНУЛЯЕМ ID
+	payment.ID = 0
 	payment.OrderUID = order.OrderUID
 	if err := tx.Create(&payment).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create payment failed: %w", err)
 	}
 
-	// Сохраняем товары (обнуляем ID)
+	// Сохраняем товары
 	for i := range order.Items {
 		item := order.Items[i]
-		item.ID = 0 // ОБНУЛЯЕМ ID
+		item.ID = 0
 		item.OrderUID = order.OrderUID
 		if err := tx.Create(&item).Error; err != nil {
 			tx.Rollback()
@@ -156,7 +156,7 @@ func (c *Consumer) processMessage(data []byte) error {
 		return fmt.Errorf("commit transaction failed: %w", err)
 	}
 
-	// Сохраняем в кэш оригинальный order (с данными)
+	// Сохраняем в кэш оригинальный order
 	log.Printf("Saving order to cache: %s", order.OrderUID)
 	if err := c.cache.Set(order.OrderUID, &order); err != nil {
 		log.Printf("Warning: failed to add order to cache: %v", err)
